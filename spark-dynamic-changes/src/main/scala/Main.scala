@@ -2,7 +2,7 @@ package com.github.snorochevskiy.playing.spark
 
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions.from_json
-import org.apache.spark.sql.streaming.{OutputMode, Trigger}
+import org.apache.spark.sql.streaming.{OutputMode, StreamingQueryListener, Trigger}
 import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
 
 object Main {
@@ -10,18 +10,15 @@ object Main {
   def main(args: Array[String]): Unit = {
     var adder = 1
 
-    new Thread(new Runnable {
-      override def run(): Unit = {
-        while (true) {
-          adder += 1
-          Thread.sleep(5000)
-        }
-      }
-    }).start()
-
     val sparkSession = SparkSession.builder()
       .appName("dynamic-experiments")
       .getOrCreate()
+
+    sparkSession.streams.addListener(new StreamingQueryListener {
+      override def onQueryStarted(event: StreamingQueryListener.QueryStartedEvent): Unit = ()
+      override def onQueryProgress(event: StreamingQueryListener.QueryProgressEvent): Unit = adder += 1
+      override def onQueryTerminated(event: StreamingQueryListener.QueryTerminatedEvent): Unit = ()
+    })
 
     import sparkSession.implicits._
 
